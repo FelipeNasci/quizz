@@ -1,7 +1,7 @@
 import { words } from "../words";
 import { useState, useEffect } from "react";
-import { Box, Divider, Button, Heading } from "@chakra-ui/react";
-
+import { Box, Divider, Heading, useToast } from "@chakra-ui/react";
+import { Button } from "./components/Button";
 function randomNumber(minRange, maxRange) {
   return Math.floor(Math.random() * maxRange) + minRange;
 }
@@ -26,34 +26,25 @@ function getQuizz() {
   };
 }
 
-const correct = {
-  colorScheme: "green",
-};
-
-const wrong = {
-  colorScheme: "red",
-};
-
 export const Home = () => {
   const [options, setOptions] = useState([]);
   const [ask, setAsk] = useState({});
   const [answer, setAnswer] = useState({});
   const [update, setUpdate] = useState(false);
-  const [sty, setSty] = useState({});
 
   useEffect(() => {
-    setTimeout(function () {}, 2000);
-    const { ask, options } = getQuizz(words.length);
-    setOptions(options);
-    setAsk(ask);
-    // setAnswer({});
+    const getTime = () =>
+      setTimeout(function () {
+        const { ask, options } = getQuizz(words.length);
+        setOptions(options);
+        setAsk(ask);
+        setAnswer({});
+      }, 2000);
+    getTime();
+    return () => clearInterval();
   }, [update]);
 
-  const style = (option) => {
-    if (!answer.id) return;
-    if (answer.word === ask.word) return answer.id === option.id && correct;
-    return answer.id === option.id && wrong;
-  };
+  const toast = useToast();
 
   return (
     <Box width="100%">
@@ -65,15 +56,25 @@ export const Home = () => {
 
       {options.map((option) => (
         <Button
-          colorScheme="teal"
-          width="100%"
-          margin={2}
-          key={option}
-          {...style(option)}
+          key={JSON.stringify(option)}
+          disabled={!!answer.id}
+          sucess={
+            option.id === answer.id ? answer.word === ask.word : undefined
+          }
           onClick={() => {
             setAnswer(option);
-
             setUpdate(!update);
+
+            const answerIsCorrect = answer.id === ask.id;
+
+            if (!answerIsCorrect) {
+              toast({
+                title: ask.translation,
+                status: "success",
+                duration: 1500,
+                isClosable: true,
+              });
+            }
           }}
         >
           {option.translation}
